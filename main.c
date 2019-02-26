@@ -18,9 +18,9 @@ void led_test(){
 }
 int main(){
 	uart_init();
-	myputc('A');
-	myputc('B');
-	myputc('C');
+	irq_init();
+	key_init();
+	
 	myputs("Hello world\n");
 
 	led_test();

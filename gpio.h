@@ -39,4 +39,13 @@ struct s5pv210_gpio{
 
 #define S5PV210_GPIO_BASE (0xE0200000)
 
+struct s5pv210_gph_bank{
+	unsigned int 	con;
+	unsigned int 	dat;
+	unsigned int 	pull;
+	unsigned int 	drv;
+};
+
+#define S5PV210_GPH2_BASE (0xE0200C40)
+
 #endif
