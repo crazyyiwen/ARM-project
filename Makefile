@@ -9,7 +9,7 @@ COBJS  += main.o
 COBJS  += start.o
 COBJS  += led.o
 COBJS  += Uart.o
-COBJS  += Key.o
+
 CROSS_COMPILE := arm-linux-gnueabi-
 
 CC     := $(CROSS_COMPILE)gcc
