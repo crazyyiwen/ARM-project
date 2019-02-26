@@ -18,6 +18,7 @@ pthread_cleanup_pop(int excute) 清除处理程序
 #include <sys/types.h>
 #include <unistd.h>
 #include <signal.h>
+#include <math.h>
 
 void *first_clean(void *arg){
 	printf("%p first clean\n", arg);
