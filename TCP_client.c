@@ -50,9 +50,8 @@ void *pth_fun(void *pth_arg){
 		bzero(&stu_data, sizeof(stu_data));
 		ret = recv(sockfd, (void *)&stu_data, sizeof(stu_data), 0);
 		if(ret > 0){
-			print_err("recv success", __LINE__, errno);
-			printf("student number %d", ntohl(stu_data.stu_num));
-			printf("student name %s", stu_data.stu_name);
+			//print_err("recv success", __LINE__, errno);
+			printf("student number %d,  student name %s\n", ntohl(stu_data.stu_num), stu_data.stu_name);
 		}
 		else if(ret == -1){
 			print_err("recv failed", __LINE__, errno);
@@ -63,7 +62,7 @@ void *pth_fun(void *pth_arg){
 int main(){
 	
 	int ret = 0;
-	//signal(SIGINT, signal_fun);
+	signal(SIGINT, signal_fun);
 	/*create socket */
 	sockfd = socket(PF_INET, SOCK_STREAM, 0);
 	if(sockfd == -1){
@@ -79,10 +78,10 @@ int main(){
 		print_err("connect failed\n", __LINE__, errno);
 	}
 	/*create child thread */
-	pthread_t tid = 0;
+	pthread_t tid;
 	ret = pthread_create(&tid, NULL, pth_fun, NULL);
 	if(ret != 0){
-		print_err("ptrhead_create failed\n", __LINE__, errno);
+		print_err("ptrhead_create failed", __LINE__, errno);
 	}
 
 	Data stu_data = {0};
@@ -99,7 +98,7 @@ int main(){
 		
 		ret = send(sockfd, (void *)&stu_data, sizeof(stu_data), 0);
 		if(ret == -1){
-			print_err("send failed\n", __LINE__, errno);
+			print_err("send failed", __LINE__, errno);
 		}
 	}
 	return 0;
