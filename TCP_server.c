@@ -19,92 +19,104 @@
 int ret_accept = -1;
 
 typedef struct data{
-        unsigned int stu_num;
-        char stu_name[50];
+	unsigned int stu_num;
+	char stu_name[50];
 }Data;
 
 void print_err(char *str, int line, int err_no){
 
-        printf("%d, %s: %s\n", line, str, strerror(err_no));
-        exit(-1);
+	printf("%d, %s: %s\n", line, str, strerror(err_no));
+	exit(-1);
 }
+
 /* */
 void signal_fun(int signo){
-        if(signo == SIGINT){
 
-                //close(ret_accept);
-                shutdown(ret_accept, SHUT_RDWR);
-                exit(0);
-        }
+	if(signo == SIGINT){
+
+		//close(ret_accept);
+		shutdown(ret_accept, SHUT_RDWR);
+		exit(0);
+	}
 }
 
 /*sub thread fun */
-void *pth_fun(void *arg){
-
-        int ret = 0;
-        Data stu_data = {0};
-        while(1){
-
-                bzero(&stu_data, sizeof(stu_data));
-                ret = recv(ret_accept, &stu_data, sizeof(stu_data), 0);
-                if(ret == -1){
-                        printf("recv failed\n", __LINE__, errno);
-                }
-                printf("student number = %d,  name = %s\n", ntohl(stu_data.stu_num), stu_data.stu_name);
-        }
+void *pth_fun(void *pth_arg){
+	
+	int ret = 0;
+	Data stu_data = {0};
+	while(1){
+		
+		bzero(&stu_data, sizeof(stu_data));
+		ret = recv(ret_accept, &stu_data, sizeof(stu_data), 0);
+		if(ret == -1){
+			printf("recv failed", __LINE__, errno);
+		}
+		else if(ret > 0){
+			printf("student number = %d,  name = %s\n", ntohl(stu_data.stu_num), stu_data.stu_name);
+		}
+	}
 }
+
 int main(){
 
-        int sockfd = -1;
-        int ret = -1;
-        /*create socket file */
-        sockfd = socket(PF_INET, SOCK_STREAM, 0);
-        pthread_t rec_tid;
-        if(sockfd == -1){
+	int sockfd = -1;	
+	int ret = -1;
+	
+	signal(SIGINT, signal_fun);
+	/*create socket file */
+	sockfd = socket(PF_INET, SOCK_STREAM, 0);
+	if(sockfd == -1){
 
-                print_err("socket failed", __LINE__, errno);
+		print_err("socket failed\n", __LINE__, errno);
+	}
+	/*bind sockaddr_in saddr  */
+	struct sockaddr_in saddr;
+	saddr.sin_family = AF_INET;
+	saddr.sin_port = htons(SPORT);
+	saddr.sin_addr.s_addr = inet_addr(SIP);
+	
+	ret = bind(sockfd, (struct sockaddr *)&saddr, sizeof(saddr));
+	if(ret == -1){
+		print_err("bind failed\n", __LINE__, errno);
+	}
+	/*from possitive socket to passive socket but not for monitoring */
+	ret = listen(sockfd, 3);
+	if(ret == -1){
+                print_err("listen failed\n", __LINE__, errno);
         }
-        /*bind sockaddr_in saddr  */
-        struct sockaddr_in saddr;
-        saddr.sin_family = AF_INET;
-        saddr.sin_port = htons(SPORT);
-        saddr.sin_addr.s_addr = inet_addr(SIP);
-        ret = bind(sockfd, (struct sockaddr *)&saddr, sizeof(saddr));
-        if(ret == -1){
-                print_err("bind failed", __LINE__, errno);
+	/*monitoring client */
+	struct sockaddr_in clnaddr = {0};
+	int clnaddr_size = sizeof(clnaddr);
+	ret_accept = accept(sockfd, (struct sockaddr *)&clnaddr, &clnaddr_size);
+	if(ret_accept == -1){
+                print_err("accept failed\n", __LINE__, errno);
         }
-        /*from possitive socket to passive socket but not for monitoring */
-        ret = listen(sockfd, 3);
-        if(ret == -1){
-                print_err("listen failed", __LINE__, errno);
-        }
-        /*monitoring client */
-        struct sockaddr_in clnaddr = {0};
-        int clnaddr_size = sizeof(clnaddr);
-        ret_accept = accept(sockfd, (struct sockaddr *)&clnaddr, &clnaddr_size);
-        if(ret == -1){
-                print_err("accept failed", __LINE__, errno);
-        }
-        printf("client_port = %d\n  client_ip = %s\n", ntohs(clnaddr.sin_port), inet_ntoa(clnaddr.sin_addr));
-        /*create a thread to receive the client data */
-        pthread_create(&rec_tid, NULL, &pth_fun, NULL);
+	printf("client_port = %d\n  client_ip = %s\n", ntohs(clnaddr.sin_port), inet_ntoa(clnaddr.sin_addr));
 
-        /*send message */
-        Data stu_data = {0};
-        unsigned int tmp_num;
-        while(1){
+	/*create child thread to receive the client data */
+	pthread_t tid;
+	ret = pthread_create(&tid, NULL, pth_fun, NULL);
+	if(ret != 0){
+		print_err("pthread_create failed\n", __LINE__, errno);
+	}	
 
-                printf("input student number\n");
-                scanf("%d", &tmp_num);
-                stu_data.stu_num = htonl(tmp_num);
-                printf("input student name\n");
-                scanf("%s", stu_data.stu_name);
-                ret = send(ret_accept, (void *)&stu_data, sizeof(stu_data), 0);
-                if(ret == -1){
-                        print_err("bind failed", __LINE__, errno);
+	/*send message */	
+	Data stu_data = {0};
+	unsigned int tmp_num = 0;
+	while(1){
+		
+		bzero(&stu_data, sizeof(stu_data));
+		printf("input student number\n");
+		scanf("%d", &tmp_num);
+		stu_data.stu_num = htonl(tmp_num);
+		printf("input student name\n");
+		scanf("%s", stu_data.stu_name);		
+		ret = send(ret_accept, (void *)&stu_data, sizeof(stu_data), 0);
+		if(ret == -1){
+                        print_err("bind failed\n", __LINE__, errno);
                 }
-        }
-
-        return 0;
+	}
+	
+	return 0;
 }
-                 
